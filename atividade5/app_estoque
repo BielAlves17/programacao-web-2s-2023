@@ -1,0 +1,85 @@
+const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
+
+const app = express();
+const port = process.env.PORT || 3000;
+const db = new sqlite3.Database('estoque.db');
+
+
+app.use(express.json());
+
+
+app.post('/api/estoque/cadastrar/:id/:nome/:qtd', (req, res) => {
+  const { id, nome, qtd } = req.params;
+
+  
+  db.run(
+    'INSERT OR REPLACE INTO estoque (id, nome, quantidade) VALUES (?, ?, ?)',
+    [id, nome, qtd],
+    (err) => {
+      if (err) {
+        res.status(500).json({ error: 'Erro ao cadastrar o item.' });
+      } else {
+        res.status(200).json({ message: 'Item cadastrado com sucesso.' });
+      }
+    }
+  );
+});
+
+
+app.get('/api/estoque/listar', (req, res) => {
+  db.all('SELECT * FROM estoque', (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: 'Erro ao listar os itens.' });
+    } else {
+      res.status(200).json(rows);
+    }
+  });
+});
+
+
+app.put('/api/estoque/editar/:id/:qtd', (req, res) => {
+  const { id, qtd } = req.params;
+
+  db.run(
+    'UPDATE estoque SET quantidade = ? WHERE id = ?',
+    [qtd, id],
+    (err) => {
+      if (err) {
+        res.status(500).json({ error: 'Erro ao editar o item.' });
+      } else {
+        res.status(200).json({ message: 'Item editado com sucesso.' });
+      }
+    }
+  );
+});
+
+
+app.delete('/api/estoque/remover/:id', (req, res) => {
+  const { id } = req.params;
+
+  db.run('DELETE FROM estoque WHERE id = ?', [id], (err) => {
+    if (err) {
+      res.status(500).json({ error: 'Erro ao remover o item.' });
+    } else {
+      res.status(200).json({ message: 'Item removido com sucesso.' });
+    }
+  });
+});
+
+
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});
+
+
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS estoque (
+      id TEXT PRIMARY KEY,
+      nome TEXT,
+      quantidade INTEGER
+    )
+  `);
+});
+
